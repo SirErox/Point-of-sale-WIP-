@@ -1,0 +1,19 @@
+QMainWindow {
+    border-radius: 10px; /* Ajusta el radio a tu preferencia */
+    background-color: white; /* Color de fondo de la ventana */
+    }
+   
+QMainWindow {
+    background-color: #f5f5f5;
+}
+
+QPushButton {
+    background-color: #4CAF50;
+    color: white;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+QPushButton:hover {
+    background-color: #005F99;
+}
