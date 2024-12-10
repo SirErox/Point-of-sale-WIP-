@@ -1,5 +1,8 @@
 import os,sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QPushButton, QWidget, QLabel, QLineEdit, QDialog, QHBoxLayout
+from source.database.db_manager import db_creation,autenticar_usuario,añadir_usuario
+#mandamos a crear la base de datos
+db_creation()
 
 # Clase para la ventana de inicio de sesión
 class LoginWindow(QDialog):
@@ -36,7 +39,7 @@ class LoginWindow(QDialog):
         password = self.input_pass.text()
 
         # Credenciales predefinidas (puedes reemplazarlas por una consulta a una base de datos)
-        if username == "admin" and password == "1234":
+        if autenticar_usuario(username,password):
             self.authenticated = True
             self.accept()  # Cierra el diálogo
         else:
@@ -49,8 +52,8 @@ class MainWindow(QMainWindow):
         self.setGeometry(100, 100, 800, 600)  # Tamaño de la ventana al iniciar
 
         # Hacer que la ventana sea redimensionable
-        self.setMinimumSize(800, 600)
-        self.setMaximumSize(1080, 1920)
+        self.setMinimumSize(600, 400)
+        self.setMaximumSize(1920, 1080)
         
         # Crear layout y widgets
         layout = QVBoxLayout()
@@ -71,9 +74,12 @@ class MainWindow(QMainWindow):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
      # Cargar archivo de estilo desde el directorio User_interface
-    style_path = os.path.join("User_interface", "styles.qss")
-    with open(style_path, "r") as file:
-        app.setStyleSheet(file.read())
+    style_path = os.path.join("source", "User_interface", "styles.qss")
+    if os.path.exists(style_path):
+        with open(style_path, "r") as file:
+            app.setStyleSheet(file.read())
+    else:
+        print("Archivo de estilos no encontrado. Continuando sin estilo.")
         
      # Mostrar ventana de inicio de sesión
     login = LoginWindow()
