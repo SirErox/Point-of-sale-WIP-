@@ -2,7 +2,11 @@ QMainWindow {
     border-radius: 10px; /* Ajusta el radio a tu preferencia */
     background-color: white; /* Color de fondo de la ventana */
 }
-   
+
+QtableWidget{
+    border: 1px solid #ccc;
+    gridline-color: #ddd;
+}
 QMainWindow {
     background-color: #f5f5f5;
 }
@@ -12,6 +16,7 @@ QPushButton {
     color: white;
     border-radius: 5px;
     padding: 10px;
+    font-size: 14px;
 }
 
 QPushButton:hover {
