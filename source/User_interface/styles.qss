@@ -14,11 +14,16 @@ QMainWindow {
 QPushButton {
     background-color: #e652c9;
     color: white;
+    border: 1px;
     border-radius: 5px;
-    padding: 10px;
+    padding: 5px;
     font-size: 14px;
 }
 
 QPushButton:hover {
+    background-color: #536f7c;
+}
+
+QPushButton:pressed{
     background-color: #536f7c;
 }

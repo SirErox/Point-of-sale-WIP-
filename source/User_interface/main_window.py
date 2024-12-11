@@ -4,7 +4,8 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeyEvent
-from source.User_interface import UserControlWindow
+from source.User_interface.UsersControlWindow import UserControlWindow
+
 def keyPressEvent(self, event: QKeyEvent):
     """Capturar eventos de teclado para atajos rápidos"""
     if event.key() == Qt.Key_F3:
@@ -105,5 +106,6 @@ class MainWindow(QMainWindow):
         print("Orden anulada")
 
     def open_user_control(self):
-        user_control_window = UserControlWindow()
-        user_control_window.exec_()  # Abre la ventana de control de usuarios
+         # Almacenar la ventana como un atributo de la clase principal
+        self.user_control_window = UserControlWindow()
+        self.user_control_window.show()  # Abre la ventana de control de usuarios
