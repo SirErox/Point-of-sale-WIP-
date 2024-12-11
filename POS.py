@@ -7,9 +7,6 @@ from source.database.db_manager import(
      db_creation)
 from source.User_interface.main_window import MainWindow
 from source.User_interface.login_window import LoginWindow
-
-#mandamos a crear la base de datos
-db_creation()
             
 if __name__ == "__main__":
     app = QApplication(sys.argv)

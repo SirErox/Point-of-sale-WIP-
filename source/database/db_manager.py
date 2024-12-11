@@ -32,21 +32,20 @@ def db_creation():
 
 def añadir_usuario(username,password,role):
     #funcion para añadir un usuario nuevo con contraseña encriptada
-    connection=sqlite3.connect(db_name)
-    cursor=connection.cursor()
-
     #encriptamos la contraseña
     hashed_password=bcrypt.hashpw(password.encode('utf-8'),bcrypt.gensalt())
 
     try:
-        cursor.execute('INSERT INTO USERS (username,password,role) values(?,?,?)',
+        with sqlite3.connect(db_name) as conn:
+            cursor=conn.cursor()
+            cursor.execute('INSERT INTO users (username,password,role) VALUES (?, ?, ?)',
                         (username,hashed_password.decode('utf-8'),role))
-        connection.commit()
-    except sqlite3.IntegrityError:
-        print("usuario ya existente en la base de datos")
-    finally:
-        connection.close()
-        
+            conn.commit()
+    except sqlite3.Error as e:
+        print(f"Error al agregar usuario: {e}")
+    except Exception as e:
+        print(f"Error inesperado: {e}")
+                
 #obtenemos los usuarios registrados de la tabla de usuarios
 def fetch_usuario():
     try:
@@ -54,7 +53,7 @@ def fetch_usuario():
         Connection=sqlite3.connect(db_name)
         #creamos cursor
         cursor=Connection.cursor()
-        query="SELECT id, username, password, role FROM USERS"
+        query="SELECT username, password, role FROM users"
         cursor.execute(query)
         USERS= cursor.fetchall()
         Connection.close()
@@ -82,12 +81,12 @@ def update_usuario(user_id,username,password,role):
         return False
 
 #eliminamos usuario de la base de datos
-def borrar_usuario(user_id):
+def borrar_usuario(username):
     try:
         connection=sqlite3.connect(db_name)
         cursor=connection.cursor()
-        query="DELETE FROM users WHERE id= ?"
-        cursor.execute(query,(user_id))
+        query="DELETE FROM users WHERE username = ?"
+        cursor.execute(query, (username,))
         connection.commit()
         connection.close()
         return True
