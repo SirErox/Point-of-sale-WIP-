@@ -33,19 +33,20 @@ def db_creation():
 def añadir_usuario(username,password,role):
     #funcion para añadir un usuario nuevo con contraseña encriptada
     #encriptamos la contraseña
-    hashed_password=bcrypt.hashpw(password.encode('utf-8'),bcrypt.gensalt())
+    hashed_password=bcrypt.hashpw(password.encode('utf-8'),bcrypt.gensalt().decode('utf-8'))
 
     try:
-        with sqlite3.connect(db_name) as conn:
-            cursor=conn.cursor()
-            cursor.execute('INSERT INTO users (username,password,role) VALUES (?, ?, ?)',
-                        (username,hashed_password.decode('utf-8'),role))
-            conn.commit()
+        connect = sqlite3.connect(db_name)
+        cursor = connect.cursor()
+        cursor.execute(
+            "INSERT INTO USERS (username, password, role) VALUES (?, ?, ?)",
+            (username, hashed_password, role),
+        )
+        connect.commit()  
     except sqlite3.Error as e:
-        print(f"Error al agregar usuario: {e}")
-    except Exception as e:
-        print(f"Error inesperado: {e}")
-                
+        raise e
+    finally:
+        connect.close()        
 #obtenemos los usuarios registrados de la tabla de usuarios
 def fetch_usuario():
     try:
@@ -107,11 +108,13 @@ def autenticar_usuario(username,password):
     #hacemos la comprobacion con contraseñas encriptadas
     if result:
         hashed_password, role = result
+        print(bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8')))
         if bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8')):
             #damos verificacion regresando el rol del usuario
             return role
     #si no no regresamos nada   
     return None
+
 
 #flag point
 #print("Base de datos conectada y tablas encontradas")

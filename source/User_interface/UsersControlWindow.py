@@ -3,57 +3,45 @@ from PyQt5.QtWidgets import (
     QPushButton, QWidget, QLabel, QLineEdit, QGridLayout, QComboBox, QMessageBox,
     QCheckBox,QMenu
 )
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore,QtGui
 from PyQt5.QtCore import Qt
 import sqlite3, bcrypt
 from source.database.db_manager import (db_creation, añadir_usuario, update_usuario, borrar_usuario, fetch_usuario)
 from source.User_interface.add_usuario import AddUserDialog
 
 class UserControlWindow(QtWidgets.QMainWindow):
-    user_table_updated=QtCore.pyqtSignal()
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Control de Usuarios")
-        self.setGeometry(200, 200, 800, 600)
-        #empezamos con la importacion de la base de datos
-        db_creation()
-        # Layout principal
-        main_layout = QVBoxLayout()
+        self.setGeometry(100, 100, 600, 400)
 
-        #barra de busqueda  
-        self.search_bar=QLineEdit()
-        self.search_bar.setPlaceholderText("Buscar usuario")
-        self.search_bar.textChanged.connect(self.filter_users)
-        main_layout.addWidget(self.search_bar)
-        self.add_user_button=QtWidgets.QPushButton("Agregar usuario")
-        self.add_user_button.clicked.connect(self.add_user)
-        main_layout.addWidget(self.add_user_button)
-        # Tabla para mostrar usuarios   
-        self.table_widget=QtWidgets.QTableWidget()
-        self.table_widget.setColumnCount(4)
-        self.table_widget.setHorizontalHeaderLabels(["Usuario", "Contraseña", "Rol","Opciones"])
-        self.table_widget.horizontalHeader().setStretchLastSection(True)
-        self.table_widget.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.table_widget.customContextMenuRequested.connect(self.show_actions_menu)
-        
-        # Crear los elementos de la interfaz
-        self.password_edit = QLineEdit()
-        self.password_edit.setEchoMode(QLineEdit.Password)
-        self.show_password_checkbox = QCheckBox("Mostrar contraseña")
-        self.show_password_checkbox.stateChanged.connect(self.toggle_password_visibility)
- 
-        # Agregar elementos al layout principal
-        main_layout.addWidget(self.table_widget)
-        #main_layout.addLayout(button_layout)
+        # Configurar la tabla de usuarios
+        self.user_table = QtWidgets.QTableWidget()
+        self.user_table.setColumnCount(4)
+        self.user_table.setHorizontalHeaderLabels(["Usuario", "Contraseña", "Rol", "Opciones"])
+        self.user_table.horizontalHeader().setStretchLastSection(True)
+        self.user_table.setSelectionBehavior(QtWidgets.QTableWidget.SelectRows)
 
-        # Configurar contenedor principal
-        container = QWidget()
-        container.setLayout(main_layout)
-        self.setCentralWidget(container)
+        # Botones de control
+        self.add_user_button = QtWidgets.QPushButton("Agregar Usuario")
+        self.edit_user_button = QtWidgets.QPushButton("Editar Usuario")
+        self.delete_user_button = QtWidgets.QPushButton("Eliminar Usuario")
+        self.save_changes_button = QtWidgets.QPushButton("Guardar Cambios")
 
-        self.add_user_dialog=AddUserDialog(self)
-        self.add_user_dialog.user_table_updated.connect(self.cargar_usuarios)
+        # Configurar el layout principal
+        button_layout = QtWidgets.QHBoxLayout()
+        button_layout.addWidget(self.add_user_button)
+        button_layout.addWidget(self.edit_user_button)
+        button_layout.addWidget(self.delete_user_button)
+        button_layout.addWidget(self.save_changes_button)
 
+        main_layout = QtWidgets.QVBoxLayout()
+        main_layout.addWidget(self.user_table)
+        main_layout.addLayout(button_layout)
+        self.setLayout(main_layout)
+
+        # Conectar las acciones de los botones
+        self.add_user_button.clicked.connect(self.open_add_user_dialog)
         self.cargar_usuarios()
 
     def update_user_table(self):
@@ -62,9 +50,10 @@ class UserControlWindow(QtWidgets.QMainWindow):
         self.table_widget.setRowCount(len(rows))
         for row_index, row in enumerate(rows):
         # Update user information in each table row
-            self.table_widget.setItem(row_index, 0, QtWidgets.QTableWidgetItem(row[1]))  # Usuario
-            self.table_widget.setItem(row_index, 1, QtWidgets.QTableWidgetItem(row[2]))  # Rol
-            self.table_widget.setItem(row_index, 2, QtWidgets.QTableWidgetItem(row[3]))  #password
+            role_bytes = row[2]  # Assuming role data is in row[2]
+            self.table_widget.setItem(row_index, 0, QtWidgets.QTableWidgetItem(row[0]))  # Usuario
+            self.table_widget.setItem(row_index, 1, QtWidgets.QTableWidgetItem(role_bytes))  # Rol
+            self.table_widget.setItem(row_index, 2, QtWidgets.QTableWidgetItem(row[1]))  #password
             # ... (update other columns)
         # Add the action button
         action_button = QtWidgets.QPushButton('Acciones')
@@ -116,34 +105,59 @@ class UserControlWindow(QtWidgets.QMainWindow):
 #Agregamos un usuario nuevo desde los campos del formulario
     def add_user(self):
         dialog = AddUserDialog(self)
-        if dialog.exec_():
-            try:
-                añadir_usuario(dialog.username_edit.text(), dialog.password_edit.text(), dialog.role_combo.currentText())
-                self.update_user_table()  # Actualizar la tabla inmediatamente
-                QMessageBox.information(self, "Éxito", "Usuario agregado correctamente.")
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Error al agregar el usuario: {str(e)}")
+        dialog.user_table_updated.connect(self.update_user_table)
+        dialog.exec_()
+        username=dialog.username_edit.text()
+        password=dialog.password_edit.text()
+        role=dialog.role_combo.currentText()
+         # Hashea la contraseña antes de guardarla
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+        try:
+            # Inserta los datos en la base de datos
+            añadir_usuario(username,password,role)
+            # Limpia los campos del formulario
+            self.username_input.clear()
+            self.password_input.clear()
+
+            # Actualiza la tabla inmediatamente
+            self.cargar_usuarios()
+
+            # Muestra un mensaje de éxito
+            QtWidgets.QMessageBox.information(self, "Éxito", f"Usuario '{username}' añadido correctamente.")
+
+        except sqlite3.Error as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Error al añadir el usuario: {e}")
+            print(f"Error: {e}")  # Esto te dará más pistas del problema
         self.update_user_table()
 
     def cargar_usuarios(self):
-        connect=sqlite3.connect("source/database/POS_database.db")
-        cursor=connect.cursor()
-        cursor.execute('SELECT * FROM USERS')
-        rows=cursor.fetchall()
-        connect.close()
-        self.table_widget.clearContents()
-        #cargamos los usuarios a la tabla
-        self.table_widget.setRowCount(len(rows))
-        for row_index, row in enumerate(rows):
-            self.table_widget.setItem(row_index, 0, QtWidgets.QTableWidgetItem(row[1]))  # Usuario
-            self.table_widget.setItem(row_index, 1, QtWidgets.QTableWidgetItem(row[2]))  # Rol
-            self.table_widget.setItem(row_index, 2, QtWidgets.QTableWidgetItem(row[3]))  # Password (should be masked)
+        users = fetch_usuario()
+        self.user_table.setRowCount(len(users))
 
-            # Agregar un botón de acciones en la última columna
-            action_button = QtWidgets.QPushButton('Acciones')
-            action_button.clicked.connect(lambda checked, row=row_index: self.show_actions_menu(action_button.geometry().bottomLeft()))
-            self.table_widget.setCellWidget(row_index, 3, action_button)
+        for row, user in enumerate(users):
+            username_item = QtWidgets.QTableWidgetItem(user[0])
+        
+            # Decodificar contraseña
+            password_item = QtWidgets.QTableWidgetItem(user[1])
+        
+            role_item = QtWidgets.QTableWidgetItem(user[2])
 
+            # Crear un botón de acciones
+            action_button = QtWidgets.QPushButton("Acciones")
+            #action_button.setStyleSheet("background-color: pink;")
+
+            self.user_table.setItem(row, 0, username_item)
+            self.user_table.setItem(row, 1, password_item)
+            self.user_table.setItem(row, 2, role_item)
+            self.user_table.setCellWidget(row, 3, action_button)
+
+    def open_add_user_dialog(self):
+        """Abre la ventana para agregar un nuevo usuario."""
+        dialog = AddUserDialog(self)
+        dialog.user_table_updated.connect(self.load_users)
+        dialog.exec_()
+    
     def show_actions_menu(self, pos):
         # Mostrar un menú contextual con opciones para editar y eliminar
         menu = QMenu(self)
